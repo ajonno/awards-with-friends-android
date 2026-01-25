@@ -81,7 +81,13 @@ class HomeViewModel @Inject constructor(
                 .catch { /* ignore errors */ }
                 .collect { eventTypes ->
                     _uiState.update {
-                        it.copy(eventTypes = eventTypes.associateBy { et -> et.slug })
+                        // Store event types - we'll look up by slug or id
+                        it.copy(eventTypes = eventTypes.flatMap { et ->
+                            listOfNotNull(
+                                et.slug.takeIf { s -> s.isNotEmpty() }?.let { s -> s to et },
+                                et.id.takeIf { i -> i.isNotEmpty() }?.let { i -> i to et }
+                            )
+                        }.toMap())
                     }
                 }
         }
