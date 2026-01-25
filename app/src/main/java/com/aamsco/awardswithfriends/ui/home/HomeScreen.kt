@@ -35,10 +35,15 @@ fun HomeScreen(
     // Derive filtered competitions from the observed state so it updates in real-time
     val filteredCompetitions = remember(uiState.competitions, uiState.filter) {
         val userId = viewModel.currentUserId
+        // First filter out hidden competitions and inactive ones (unless owner)
+        val visibleCompetitions = uiState.competitions
+            .filter { !it.hidden }
+            .filter { it.status != "inactive" || it.createdBy == userId }
+        // Then apply user filter
         when (uiState.filter) {
-            CompetitionFilter.ALL -> uiState.competitions
-            CompetitionFilter.MINE -> uiState.competitions.filter { it.createdBy == userId }
-            CompetitionFilter.JOINED -> uiState.competitions.filter { it.createdBy != userId }
+            CompetitionFilter.ALL -> visibleCompetitions
+            CompetitionFilter.MINE -> visibleCompetitions.filter { it.createdBy == userId }
+            CompetitionFilter.JOINED -> visibleCompetitions.filter { it.createdBy != userId }
         }
     }
 

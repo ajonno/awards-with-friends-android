@@ -11,6 +11,7 @@ data class Ceremony(
     val event: String? = null, // Event type document ID
     val date: Timestamp? = null,
     val status: String = "upcoming",
+    val hidden: Boolean = false,
     val categoryCount: Int? = null
 ) {
     val ceremonyStatus: CeremonyStatus

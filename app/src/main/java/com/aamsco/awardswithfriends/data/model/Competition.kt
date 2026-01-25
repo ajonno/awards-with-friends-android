@@ -17,6 +17,7 @@ data class Competition(
     @ServerTimestamp
     val createdAt: Timestamp? = null,
     val status: String = "open",
+    val hidden: Boolean = false,
     val participantCount: Int = 0,
     val participantIds: List<String> = emptyList(),
     // Denormalized ceremony info

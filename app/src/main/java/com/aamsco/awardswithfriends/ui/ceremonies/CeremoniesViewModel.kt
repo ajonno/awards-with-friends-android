@@ -41,7 +41,7 @@ class CeremoniesViewModel @Inject constructor(
                 .catch { /* ignore event type loading errors */ }
                 .collect { eventTypes ->
                     _uiState.update {
-                        it.copy(eventTypes = eventTypes.associateBy { et -> et.id })
+                        it.copy(eventTypes = eventTypes.associateBy { et -> et.slug })
                     }
                 }
         }

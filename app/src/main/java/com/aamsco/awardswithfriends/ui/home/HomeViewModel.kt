@@ -81,7 +81,7 @@ class HomeViewModel @Inject constructor(
                 .catch { /* ignore errors */ }
                 .collect { eventTypes ->
                     _uiState.update {
-                        it.copy(eventTypes = eventTypes.associateBy { et -> et.id })
+                        it.copy(eventTypes = eventTypes.associateBy { et -> et.slug })
                     }
                 }
         }
@@ -115,6 +115,10 @@ class HomeViewModel @Inject constructor(
     fun getFilteredCompetitions(): List<Competition> {
         val userId = currentUserId ?: return _uiState.value.competitions
         val competitions = _uiState.value.competitions
+            // Filter out hidden competitions
+            .filter { !it.hidden }
+            // Filter out inactive competitions unless you're the owner
+            .filter { it.status != "inactive" || it.createdBy == userId }
 
         return when (_uiState.value.filter) {
             CompetitionFilter.ALL -> competitions

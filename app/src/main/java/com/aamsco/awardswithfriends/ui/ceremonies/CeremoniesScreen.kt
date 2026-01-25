@@ -39,15 +39,17 @@ fun CeremoniesScreen(
 
     // Derive filtered ceremonies from the observed state so it updates in real-time
     val filteredCeremonies = remember(uiState.ceremonies, uiState.selectedEvent, uiState.eventTypes) {
+        val visibleCeremonies = uiState.ceremonies.filter { !it.hidden }
         if (uiState.selectedEvent == null) {
-            uiState.ceremonies
+            visibleCeremonies
         } else {
-            uiState.ceremonies.filter { getEventDisplayName(it.event) == uiState.selectedEvent }
+            visibleCeremonies.filter { getEventDisplayName(it.event) == uiState.selectedEvent }
         }
     }
 
     val eventNames = remember(uiState.ceremonies, uiState.eventTypes) {
         uiState.ceremonies
+            .filter { !it.hidden }
             .map { getEventDisplayName(it.event) }
             .distinct()
             .sorted()
