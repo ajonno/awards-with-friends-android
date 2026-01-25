@@ -395,7 +395,7 @@ fun CompetitionDetailScreen(
             onDismissRequest = { showLeaveDialog = false },
             title = { Text("Leave Competition") },
             text = {
-                Text("Are you sure you want to leave \"${competition?.name}\"? Your votes will be deleted.")ye
+                Text("Are you sure you want to leave \"${competition?.name}\"? Your votes will be deleted.")
             },
             confirmButton = {
                 TextButton(
