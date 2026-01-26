@@ -13,6 +13,7 @@ import com.aamsco.awardswithfriends.data.repository.ConfigRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 data class CeremonyDetailUiState(
@@ -137,7 +138,25 @@ class CeremonyDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isVoting = true, error = null) }
             try {
                 ceremonyRepository.castCeremonyVote(ceremonyYear, categoryId, nomineeId)
-                _uiState.update { it.copy(isVoting = false, voteSuccess = true) }
+
+                // Wait for vote confirmation from Firestore (with 5 second timeout)
+                val confirmedVote = withTimeoutOrNull(5000L) {
+                    ceremonyRepository.categoryVoteFlow(ceremonyYear, event, categoryId)
+                        .first { vote -> vote?.nomineeId == nomineeId }
+                }
+
+                // Update local votes map immediately for instant UI feedback
+                if (confirmedVote != null) {
+                    _uiState.update { state ->
+                        val updatedVotes = state.votes.toMutableMap()
+                        updatedVotes[categoryId] = confirmedVote
+                        state.copy(votes = updatedVotes, isVoting = false, voteSuccess = true)
+                    }
+                } else {
+                    // Timeout - still dismiss since cloud function succeeded
+                    _uiState.update { it.copy(isVoting = false, voteSuccess = true) }
+                }
+
                 onSuccess()
             } catch (e: Exception) {
                 _uiState.update { it.copy(isVoting = false, error = e.message) }

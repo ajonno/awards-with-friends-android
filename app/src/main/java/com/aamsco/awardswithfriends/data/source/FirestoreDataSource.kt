@@ -168,6 +168,40 @@ class FirestoreDataSource @Inject constructor(
             .map { snapshot -> snapshot.toObjects<Vote>() }
     }
 
+    // Get vote for a single category (used for vote confirmation)
+    fun categoryVoteFlow(userId: String, ceremonyYear: String, event: String?, categoryId: String): Flow<Vote?> {
+        return competitionsFlow(userId)
+            .flatMapLatest { competitions ->
+                // Filter competitions by ceremonyYear and event
+                val matchingCompetitions = competitions.filter { comp ->
+                    comp.ceremonyYear == ceremonyYear &&
+                    (event == null || comp.event == null || comp.event == event)
+                }
+
+                if (matchingCompetitions.isEmpty()) {
+                    flowOf(null)
+                } else {
+                    // Listen to the specific vote document in all matching competitions
+                    combine(
+                        matchingCompetitions.map { comp ->
+                            val voteId = "${userId}_${categoryId}"
+                            firestore.collection("competitions")
+                                .document(comp.id)
+                                .collection("votes")
+                                .document(voteId)
+                                .snapshots()
+                                .map { snapshot ->
+                                    if (snapshot.exists()) snapshot.toObject<Vote>() else null
+                                }
+                        }
+                    ) { votes ->
+                        // Return the most recent vote across competitions
+                        votes.filterNotNull().maxByOrNull { it.votedAt?.seconds ?: 0 }
+                    }
+                }
+            }
+    }
+
     // Get votes for all competitions matching a ceremony year/event
     fun ceremonyVotesFlow(userId: String, ceremonyYear: String, event: String?): Flow<Map<String, Vote>> {
         // First get all competitions the user is in

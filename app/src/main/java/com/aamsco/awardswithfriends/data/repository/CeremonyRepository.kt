@@ -63,6 +63,10 @@ class CeremonyRepository @Inject constructor(
         return firestoreDataSource.ceremonyVotesFlow(currentUserId, ceremonyYear, event)
     }
 
+    fun categoryVoteFlow(ceremonyYear: String, event: String?, categoryId: String): Flow<Vote?> {
+        return firestoreDataSource.categoryVoteFlow(currentUserId, ceremonyYear, event, categoryId)
+    }
+
     suspend fun castCeremonyVote(
         ceremonyYear: String,
         categoryId: String,
