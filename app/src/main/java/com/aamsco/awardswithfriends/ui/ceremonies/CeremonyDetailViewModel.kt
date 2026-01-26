@@ -90,7 +90,9 @@ class CeremonyDetailViewModel @Inject constructor(
     private fun loadVotes() {
         viewModelScope.launch {
             ceremonyRepository.ceremonyVotesFlow(ceremonyYear, event)
-                .catch { /* ignore errors */ }
+                .catch { e ->
+                    _uiState.update { it.copy(error = "Failed to load votes: ${e.message}") }
+                }
                 .collect { votes ->
                     _uiState.update { it.copy(votes = votes) }
                 }

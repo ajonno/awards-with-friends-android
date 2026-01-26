@@ -39,9 +39,18 @@ fun CeremonyDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(ceremonyId, ceremonyYear, event) {
         viewModel.initialize(ceremonyId, ceremonyYear, event)
+    }
+
+    // Show error in snackbar
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            snackbarHostState.showSnackbar(error)
+            viewModel.clearError()
+        }
     }
 
     // Bottom sheet for category details
@@ -69,6 +78,7 @@ fun CeremonyDetailScreen(
 
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
