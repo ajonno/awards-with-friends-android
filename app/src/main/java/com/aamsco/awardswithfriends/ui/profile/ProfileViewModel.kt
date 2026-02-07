@@ -1,11 +1,16 @@
 package com.aamsco.awardswithfriends.ui.profile
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aamsco.awardswithfriends.data.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -14,6 +19,7 @@ import javax.inject.Inject
 data class ProfileUiState(
     val user: FirebaseUser? = null,
     val isSigningOut: Boolean = false,
+    val notificationsEnabled: Boolean = false,
     val error: String? = null
 )
 
@@ -27,7 +33,12 @@ class ProfileViewModel @Inject constructor(
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     init {
-        _uiState.update { it.copy(user = auth.currentUser) }
+        _uiState.update {
+            it.copy(
+                user = auth.currentUser,
+                notificationsEnabled = FirebaseMessaging.getInstance().isAutoInitEnabled
+            )
+        }
     }
 
     fun signOut() {
@@ -70,6 +81,20 @@ class ProfileViewModel @Inject constructor(
             packageInfo.versionCode.toString()
         } catch (e: Exception) {
             "1"
+        }
+    }
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        FirebaseMessaging.getInstance().isAutoInitEnabled = enabled
+        _uiState.update { it.copy(notificationsEnabled = enabled) }
+    }
+
+    fun checkNotificationPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        } else {
+            true
         }
     }
 

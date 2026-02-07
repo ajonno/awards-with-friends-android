@@ -163,6 +163,30 @@ fun ProfileScreen(
                         .padding(bottom = 16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Push Notifications",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Switch(
+                                checked = uiState.notificationsEnabled,
+                                onCheckedChange = { enabled ->
+                                    viewModel.setNotificationsEnabled(enabled)
+                                }
+                            )
+                        }
+                        if (!viewModel.checkNotificationPermission(context)) {
+                            Text(
+                                text = "Notifications are disabled in system settings",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         ProfileRow(
                             label = "Version",
                             value = viewModel.getAppVersion(context)
