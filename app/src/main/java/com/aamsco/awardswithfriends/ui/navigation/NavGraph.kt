@@ -35,6 +35,7 @@ fun AppNavGraph(
         if (isAuthenticated && backStack.lastOrNull() !is HomeDestination) {
             backStack.clear()
             backStack.add(HomeDestination)
+            currentTab = "ceremonies_tab"
         } else if (!isAuthenticated && backStack.lastOrNull() !is LoginDestination) {
             backStack.clear()
             backStack.add(LoginDestination)
