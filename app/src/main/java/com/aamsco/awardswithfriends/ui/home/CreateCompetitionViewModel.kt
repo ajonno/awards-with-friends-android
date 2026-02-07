@@ -3,6 +3,7 @@ package com.aamsco.awardswithfriends.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aamsco.awardswithfriends.data.model.Ceremony
+import com.aamsco.awardswithfriends.data.model.CeremonyStatus
 import com.aamsco.awardswithfriends.data.repository.CeremonyRepository
 import com.aamsco.awardswithfriends.data.repository.CompetitionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,7 +41,7 @@ class CreateCompetitionViewModel @Inject constructor(
                     _uiState.update { it.copy(error = e.message, isLoading = false) }
                 }
                 .collect { ceremonies ->
-                    val activeCeremonies = ceremonies.filter { it.status != "completed" }
+                    val activeCeremonies = ceremonies.filter { it.ceremonyStatus != CeremonyStatus.COMPLETED }
                     _uiState.update { state ->
                         state.copy(
                             ceremonies = activeCeremonies,
