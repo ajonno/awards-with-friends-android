@@ -24,11 +24,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var firebaseAuth: FirebaseAuth
 
-    private val isAuthenticated = MutableStateFlow(false)
+    private val isAuthenticated = MutableStateFlow<Boolean?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Install splash screen before calling super.onCreate
-        installSplashScreen()
+        // Keep splash visible until auth state is determined
+        installSplashScreen().setKeepOnScreenCondition { isAuthenticated.value == null }
 
         super.onCreate(savedInstanceState)
 
@@ -46,7 +47,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavGraph(isAuthenticated = authenticated)
+                    // Only render nav graph once auth state is known
+                    authenticated?.let { isAuth ->
+                        AppNavGraph(isAuthenticated = isAuth)
+                    }
                 }
             }
         }
