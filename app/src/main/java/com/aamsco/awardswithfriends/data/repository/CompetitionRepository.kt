@@ -29,8 +29,8 @@ class CompetitionRepository @Inject constructor(
         return firestoreDataSource.competitionFlow(competitionId)
     }
 
-    suspend fun createCompetition(name: String, ceremonyId: String): Map<String, Any> {
-        return cloudFunctionsDataSource.createCompetition(name, ceremonyId)
+    suspend fun createCompetition(name: String, ceremonyYear: String, event: String?): Map<String, Any> {
+        return cloudFunctionsDataSource.createCompetition(name, ceremonyYear, event)
     }
 
     suspend fun joinCompetition(inviteCode: String): Map<String, Any> {

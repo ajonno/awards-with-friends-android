@@ -23,6 +23,7 @@ data class CeremonyDetailUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val canVote: Boolean = false,  // True if user has paid or payment not required
+    val hasAnyCompetition: Boolean = false,  // User is in at least one non-inactive competition for this ceremony
     val openCompetitionCount: Int = 0,  // Number of open competitions for this ceremony
     val isVoting: Boolean = false,
     val voteSuccess: Boolean = false
@@ -76,13 +77,24 @@ class CeremonyDetailViewModel @Inject constructor(
             competitionRepository.competitionsFlow()
                 .catch { /* ignore errors */ }
                 .collect { competitions ->
-                    // Filter competitions for this ceremony that are open
-                    val openForCeremony = competitions.filter { comp ->
+                    // All non-inactive competitions for this ceremony (to show votes)
+                    val allForCeremony = competitions.filter { comp ->
                         comp.ceremonyYear == ceremonyYear &&
-                        comp.competitionStatus == CompetitionStatus.OPEN &&
+                        comp.competitionStatus != CompetitionStatus.INACTIVE &&
                         (event == null || comp.event == null || comp.event == event)
                     }
-                    _uiState.update { it.copy(openCompetitionCount = openForCeremony.size) }
+
+                    // Only open competitions (to enable voting)
+                    val openForCeremony = allForCeremony.filter { comp ->
+                        comp.competitionStatus == CompetitionStatus.OPEN
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            hasAnyCompetition = allForCeremony.isNotEmpty(),
+                            openCompetitionCount = openForCeremony.size
+                        )
+                    }
                 }
         }
     }

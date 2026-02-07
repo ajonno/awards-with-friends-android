@@ -62,7 +62,8 @@ class CreateCompetitionViewModel @Inject constructor(
 
     fun createCompetition() {
         val state = _uiState.value
-        val ceremonyId = state.selectedCeremonyId ?: return
+        val selectedCeremony = state.ceremonies.find { it.id == state.selectedCeremonyId }
+            ?: return
 
         if (state.name.isBlank()) {
             _uiState.update { it.copy(error = "Please enter a competition name") }
@@ -75,7 +76,8 @@ class CreateCompetitionViewModel @Inject constructor(
             try {
                 val result = competitionRepository.createCompetition(
                     name = state.name.trim(),
-                    ceremonyId = ceremonyId
+                    ceremonyYear = selectedCeremony.year,
+                    event = selectedCeremony.event
                 )
                 val inviteCode = result["inviteCode"] as? String
                 _uiState.update { it.copy(isCreating = false, createdInviteCode = inviteCode) }

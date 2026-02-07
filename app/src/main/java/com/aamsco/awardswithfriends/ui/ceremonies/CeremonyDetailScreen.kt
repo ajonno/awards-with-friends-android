@@ -37,6 +37,8 @@ fun CeremonyDetailScreen(
     viewModel: CeremonyDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    // Only show votes if user is in at least one non-inactive competition (matches iOS)
+    val activeVotes = if (uiState.hasAnyCompetition) uiState.votes else emptyMap()
     var selectedCategory by remember { mutableStateOf<Category?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val snackbarHostState = remember { SnackbarHostState() }
@@ -57,7 +59,7 @@ fun CeremonyDetailScreen(
     selectedCategory?.let { category ->
         CategoryBottomSheet(
             category = category,
-            currentVote = uiState.votes[category.id],
+            currentVote = activeVotes[category.id],
             canVote = uiState.openCompetitionCount > 0,
             isVoting = uiState.isVoting,
             sheetState = sheetState,
@@ -172,7 +174,7 @@ fun CeremonyDetailScreen(
                     ) { category ->
                         CategoryRow(
                             category = category,
-                            vote = uiState.votes[category.id],
+                            vote = activeVotes[category.id],
                             onClick = { selectedCategory = category }
                         )
                     }

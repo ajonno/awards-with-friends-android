@@ -9,11 +9,14 @@ import javax.inject.Singleton
 class CloudFunctionsDataSource @Inject constructor(
     private val functions: FirebaseFunctions
 ) {
-    suspend fun createCompetition(name: String, ceremonyId: String): Map<String, Any> {
+    suspend fun createCompetition(name: String, ceremonyYear: String, event: String?): Map<String, Any> {
         val data = hashMapOf(
             "name" to name,
-            "ceremonyId" to ceremonyId
+            "ceremonyYear" to ceremonyYear
         )
+        if (event != null) {
+            data["event"] = event
+        }
         val result = functions
             .getHttpsCallable("createCompetition")
             .call(data)

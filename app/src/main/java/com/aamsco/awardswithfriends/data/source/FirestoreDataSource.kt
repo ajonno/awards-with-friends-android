@@ -172,9 +172,10 @@ class FirestoreDataSource @Inject constructor(
     fun categoryVoteFlow(userId: String, ceremonyYear: String, event: String?, categoryId: String): Flow<Vote?> {
         return competitionsFlow(userId)
             .flatMapLatest { competitions ->
-                // Filter competitions by ceremonyYear and event
+                // Filter competitions by ceremonyYear and event, excluding inactive
                 val matchingCompetitions = competitions.filter { comp ->
                     comp.ceremonyYear == ceremonyYear &&
+                    comp.competitionStatus != CompetitionStatus.INACTIVE &&
                     (event == null || comp.event == null || comp.event == event)
                 }
 
@@ -207,9 +208,10 @@ class FirestoreDataSource @Inject constructor(
         // First get all competitions the user is in
         return competitionsFlow(userId)
             .flatMapLatest { competitions ->
-                // Filter competitions by ceremonyYear and event
+                // Filter competitions by ceremonyYear and event, excluding inactive
                 val matchingCompetitions = competitions.filter { comp ->
                     comp.ceremonyYear == ceremonyYear &&
+                    comp.competitionStatus != CompetitionStatus.INACTIVE &&
                     (event == null || comp.event == null || comp.event == event)
                 }
 
