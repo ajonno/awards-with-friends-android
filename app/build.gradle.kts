@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 // Load keystore properties
 val keystorePropertiesFile = rootProject.file("app/keystore.properties")
@@ -9,7 +10,6 @@ if (keystorePropertiesFile.exists()) {
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -57,11 +57,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     buildFeatures {
         compose = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 
@@ -89,14 +92,15 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
+    ksp(libs.kotlin.metadata.jvm)
     implementation(libs.hilt.navigation.compose)
 
     // Firebase
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth.ktx)
-    implementation(libs.firebase.firestore.ktx)
-    implementation(libs.firebase.functions.ktx)
-    implementation(libs.firebase.messaging.ktx)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.functions)
+    implementation(libs.firebase.messaging)
 
     // Google Sign-In / Credential Manager
     implementation(libs.play.services.auth)

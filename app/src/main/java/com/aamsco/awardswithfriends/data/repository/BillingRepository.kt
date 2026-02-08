@@ -97,7 +97,8 @@ class BillingRepository @Inject constructor(
             .setProductList(productList)
             .build()
 
-        billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+        billingClient.queryProductDetailsAsync(params) { billingResult, queryResult ->
+            val productDetailsList = queryResult.productDetailsList
             Log.d(TAG, "Products query result: responseCode=${billingResult.responseCode}, products=${productDetailsList.size}")
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                 _products.value = productDetailsList
