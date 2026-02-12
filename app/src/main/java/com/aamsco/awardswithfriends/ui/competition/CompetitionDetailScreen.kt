@@ -83,7 +83,7 @@ fun CompetitionDetailScreen(
                         IconButton(onClick = {
                             // Show invite friends sheet
                             competition?.let { comp ->
-                                val inviteMessage = "Join my ${comp.eventDisplayName} competition!\n\nUse invite code: ${comp.inviteCode}\n\nDownload Awards With Friends:\nhttps://play.google.com/store/apps/details?id=com.aamsco.awardswithfriends"
+                                val inviteMessage = "Join my ${comp.eventDisplayName} competition!\n\nUse invite code: ${comp.inviteCode}\n\nDownload Awards With Friends:\niOS: https://apps.apple.com/app/id1638720136\nAndroid: https://play.google.com/store/apps/details?id=com.aamsco.awardswithfriends"
                                 val sendIntent = Intent().apply {
                                     action = Intent.ACTION_SEND
                                     putExtra(Intent.EXTRA_TEXT, inviteMessage)
@@ -247,7 +247,7 @@ fun CompetitionDetailScreen(
                                         // Share button
                                         OutlinedIconButton(
                                             onClick = {
-                                                val inviteMessage = "Join my ${competition.eventDisplayName} competition!\n\nUse invite code: ${competition.inviteCode}\n\nDownload Awards With Friends:\nhttps://play.google.com/store/apps/details?id=com.aamsco.awardswithfriends"
+                                                val inviteMessage = "Join my ${competition.eventDisplayName} competition!\n\nUse invite code: ${competition.inviteCode}\n\nDownload Awards With Friends:\niOS: https://apps.apple.com/app/id1638720136\nAndroid: https://play.google.com/store/apps/details?id=com.aamsco.awardswithfriends"
                                                 val sendIntent = Intent().apply {
                                                     action = Intent.ACTION_SEND
                                                     putExtra(Intent.EXTRA_TEXT, inviteMessage)

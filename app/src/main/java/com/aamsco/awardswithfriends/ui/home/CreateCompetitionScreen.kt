@@ -217,7 +217,7 @@ private fun SuccessContent(
     context: Context,
     onDone: () -> Unit
 ) {
-    val shareMessage = "Join my predictions competition \"$competitionName\" on Awards With Friends!\n\nInvite code: $inviteCode"
+    val shareMessage = "Join my predictions competition \"$competitionName\" on Awards With Friends!\n\nInvite code: $inviteCode\n\nDownload Awards With Friends:\niOS: https://apps.apple.com/app/id1638720136\nAndroid: https://play.google.com/store/apps/details?id=com.aamsco.awardswithfriends"
     var showCopiedMessage by remember { mutableStateOf(false) }
 
     Column(

@@ -30,7 +30,7 @@ fun InviteBottomSheet(
     var showCopiedSnackbar by remember { mutableStateOf(false) }
 
     val inviteCode = competition.inviteCode ?: ""
-    val shareMessage = "Join my ${competition.eventDisplayName} competition \"${competition.name}\" on Awards With Friends!\n\nInvite code: $inviteCode"
+    val shareMessage = "Join my ${competition.eventDisplayName} competition \"${competition.name}\" on Awards With Friends!\n\nInvite code: $inviteCode\n\nDownload Awards With Friends:\niOS: https://apps.apple.com/app/id1638720136\nAndroid: https://play.google.com/store/apps/details?id=com.aamsco.awardswithfriends"
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,

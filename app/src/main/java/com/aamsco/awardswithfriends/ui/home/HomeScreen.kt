@@ -321,7 +321,8 @@ private fun FilteredEmptyState(
                 "No Competitions Joined"
             },
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(8.dp))
