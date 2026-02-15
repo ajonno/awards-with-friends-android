@@ -9,5 +9,6 @@ data class Nominee(
     val title: String = "",
     val subtitle: String? = null,
     val imageUrl: String = "",
-    val tmdbId: String? = null
+    val tmdbId: String? = null,
+    val trailerYouTubeId: String? = null
 )

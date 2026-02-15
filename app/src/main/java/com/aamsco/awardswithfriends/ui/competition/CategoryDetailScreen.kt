@@ -1,5 +1,7 @@
 package com.aamsco.awardswithfriends.ui.competition
 
+import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,11 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.aamsco.awardswithfriends.data.model.Nominee
+import com.aamsco.awardswithfriends.ui.components.TrailerPlayerActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +38,33 @@ fun CategoryDetailScreen(
     }
 
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    var trailerConfirmNominee by remember { mutableStateOf<Nominee?>(null) }
+
+    // Trailer confirmation dialog
+    trailerConfirmNominee?.let { nominee ->
+        AlertDialog(
+            onDismissRequest = { trailerConfirmNominee = null },
+            title = { Text("Play trailer?") },
+            text = { Text("Watch the ${nominee.title} trailer?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val intent = Intent(context, TrailerPlayerActivity::class.java).apply {
+                        putExtra(TrailerPlayerActivity.EXTRA_YOUTUBE_ID, nominee.trailerYouTubeId)
+                    }
+                    context.startActivity(intent)
+                    trailerConfirmNominee = null
+                }) {
+                    Text("Play")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { trailerConfirmNominee = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     // Derive computed values from the observed state so they update in real-time
     val canVote = remember(uiState.selectedNomineeId, uiState.isVoting, uiState.currentVote, uiState.category) {
@@ -153,7 +184,10 @@ fun CategoryDetailScreen(
                             isSelected = uiState.selectedNomineeId == nominee.id,
                             isWinner = category.winnerId == nominee.id,
                             isLocked = category.isVotingLocked,
-                            onClick = { viewModel.selectNominee(nominee.id) }
+                            onClick = { viewModel.selectNominee(nominee.id) },
+                            onPlayTrailer = if (nominee.trailerYouTubeId != null) {
+                                { trailerConfirmNominee = nominee }
+                            } else null
                         )
                     }
                 }
@@ -212,7 +246,8 @@ private fun NomineeCard(
     isSelected: Boolean,
     isWinner: Boolean,
     isLocked: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onPlayTrailer: (() -> Unit)? = null
 ) {
     val isPeopleCategory = categoryName.lowercase().let {
         it.contains("actor") ||
@@ -231,18 +266,13 @@ private fun NomineeCard(
     val imageUrl = nominee.imageUrl.ifEmpty { placeholderUrl }
 
     Card(
-        onClick = onClick,
-        enabled = !isLocked,
-        modifier = Modifier
-            .fillMaxWidth()
-            .let { if (isLocked && !isSelected && !isWinner) it else it },
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
                 MaterialTheme.colorScheme.surfaceVariant
-            },
-            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+            }
         )
     ) {
         Row(
@@ -252,34 +282,46 @@ private fun NomineeCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Selection indicator
-            Icon(
-                imageVector = if (isSelected) {
-                    Icons.Default.CheckCircle
-                } else {
-                    Icons.Default.RadioButtonUnchecked
-                },
-                contentDescription = if (isSelected) "Selected" else "Not selected",
-                tint = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                modifier = Modifier.size(28.dp)
-            )
+            // Radio button + image — taps to vote
+            Row(
+                modifier = Modifier.clickable(enabled = !isLocked, onClick = onClick),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (isSelected) {
+                        Icons.Default.CheckCircle
+                    } else {
+                        Icons.Default.RadioButtonUnchecked
+                    },
+                    contentDescription = if (isSelected) "Selected" else "Not selected",
+                    tint = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.size(28.dp)
+                )
 
-            // Nominee image
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = nominee.title,
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = nominee.title,
+                    modifier = Modifier
+                        .size(50.dp, 70.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            // Text area — taps to play trailer (or vote if no trailer)
+            Column(
                 modifier = Modifier
-                    .size(50.dp, 70.dp)
-                    .clip(RoundedCornerShape(6.dp)),
-                contentScale = ContentScale.Crop
-            )
-
-            // Nominee info
-            Column(modifier = Modifier.weight(1f)) {
+                    .weight(1f)
+                    .clickable(
+                        enabled = !isLocked || onPlayTrailer != null,
+                        onClick = onPlayTrailer ?: onClick
+                    )
+            ) {
                 Text(
                     text = nominee.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -298,6 +340,26 @@ private fun NomineeCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+
+                if (onPlayTrailer != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Trailer Available",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
