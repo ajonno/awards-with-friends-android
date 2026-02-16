@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aamsco.awardswithfriends.data.model.Ceremony
 import com.aamsco.awardswithfriends.data.model.EventTypeData
+import com.aamsco.awardswithfriends.data.repository.AppUpdateRepository
 import com.aamsco.awardswithfriends.data.repository.CeremonyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -24,7 +25,8 @@ data class CeremoniesUiState(
 
 @HiltViewModel
 class CeremoniesViewModel @Inject constructor(
-    private val ceremonyRepository: CeremonyRepository
+    private val ceremonyRepository: CeremonyRepository,
+    val appUpdateRepository: AppUpdateRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CeremoniesUiState())

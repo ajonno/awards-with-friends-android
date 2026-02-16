@@ -24,8 +24,8 @@ android {
         applicationId = "com.aamsco.awardswithfriends"
         minSdk = 30
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.1.0"
+        versionCode = 15
+        versionName = "1.1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

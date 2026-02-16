@@ -16,6 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aamsco.awardswithfriends.data.model.Competition
+import com.aamsco.awardswithfriends.ui.components.AppUpdateBanner
 import com.aamsco.awardswithfriends.ui.components.CompetitionCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -125,6 +126,8 @@ fun HomeScreen(
                     }
                 }
             }
+
+            AppUpdateBanner(appUpdateRepository = viewModel.appUpdateRepository)
 
             // Filter tabs
             if (uiState.competitions.isNotEmpty()) {

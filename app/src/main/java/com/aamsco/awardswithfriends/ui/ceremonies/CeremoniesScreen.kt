@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aamsco.awardswithfriends.data.model.Ceremony
 import com.aamsco.awardswithfriends.data.model.CeremonyStatus
+import com.aamsco.awardswithfriends.ui.components.AppUpdateBanner
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -70,6 +71,8 @@ fun CeremoniesScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
+
+            AppUpdateBanner(appUpdateRepository = viewModel.appUpdateRepository)
 
             // Event filter chips
             if (uiState.ceremonies.isNotEmpty()) {

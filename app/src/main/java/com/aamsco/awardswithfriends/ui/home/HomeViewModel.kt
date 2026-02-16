@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aamsco.awardswithfriends.data.model.Competition
 import com.aamsco.awardswithfriends.data.model.EventTypeData
+import com.aamsco.awardswithfriends.data.repository.AppUpdateRepository
 import com.aamsco.awardswithfriends.data.repository.BillingRepository
 import com.aamsco.awardswithfriends.data.repository.CeremonyRepository
 import com.aamsco.awardswithfriends.data.repository.CompetitionRepository
@@ -34,6 +35,7 @@ class HomeViewModel @Inject constructor(
     private val ceremonyRepository: CeremonyRepository,
     private val configRepository: ConfigRepository,
     private val billingRepository: BillingRepository,
+    val appUpdateRepository: AppUpdateRepository,
     private val auth: FirebaseAuth
 ) : ViewModel() {
 
