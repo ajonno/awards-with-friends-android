@@ -2,8 +2,11 @@ package com.aamsco.awardswithfriends.ui.leaderboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aamsco.awardswithfriends.data.model.Category
 import com.aamsco.awardswithfriends.data.model.Competition
 import com.aamsco.awardswithfriends.data.model.Participant
+import com.aamsco.awardswithfriends.data.model.Vote
+import com.aamsco.awardswithfriends.data.repository.CeremonyRepository
 import com.aamsco.awardswithfriends.data.repository.CompetitionRepository
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,13 +17,24 @@ import javax.inject.Inject
 data class LeaderboardUiState(
     val competition: Competition? = null,
     val participants: List<Participant> = emptyList(),
+    val categories: List<Category> = emptyList(),
     val isLoading: Boolean = true,
     val error: String? = null
-)
+) {
+    val totalCategories: Int
+        get() = categories.count { !it.isHidden }
+
+    val completedCategories: Int
+        get() = categories.count { !it.isHidden && it.hasWinner }
+
+    val canViewPicks: Boolean
+        get() = competition?.status != "open"
+}
 
 @HiltViewModel
 class LeaderboardViewModel @Inject constructor(
     private val competitionRepository: CompetitionRepository,
+    private val ceremonyRepository: CeremonyRepository,
     private val auth: FirebaseAuth
 ) : ViewModel() {
 
@@ -47,6 +61,10 @@ class LeaderboardViewModel @Inject constructor(
                 }
                 .collect { competition ->
                     _uiState.update { it.copy(competition = competition) }
+                    // Load categories once we have the competition
+                    if (competition != null) {
+                        loadCategories(competition.ceremonyYear, competition.event)
+                    }
                 }
         }
     }
@@ -66,6 +84,20 @@ class LeaderboardViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    private fun loadCategories(ceremonyYear: String, event: String?) {
+        viewModelScope.launch {
+            ceremonyRepository.categoriesFlow(ceremonyYear, event)
+                .catch { /* Silently fail - category counts are supplementary */ }
+                .collect { categories ->
+                    _uiState.update { it.copy(categories = categories) }
+                }
+        }
+    }
+
+    suspend fun votesForUser(userId: String): List<Vote> {
+        return competitionRepository.votesForUser(competitionId, userId)
     }
 
     fun isCurrentUser(participant: Participant): Boolean {

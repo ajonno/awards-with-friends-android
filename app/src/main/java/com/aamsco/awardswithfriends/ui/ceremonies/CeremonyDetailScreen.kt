@@ -1,7 +1,11 @@
 package com.aamsco.awardswithfriends.ui.ceremonies
 
 import android.content.Intent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,10 +19,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -26,6 +33,8 @@ import com.aamsco.awardswithfriends.data.model.Category
 import com.aamsco.awardswithfriends.data.model.Nominee
 import com.aamsco.awardswithfriends.data.model.Vote
 import com.aamsco.awardswithfriends.ui.components.TrailerPlayerActivity
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -404,32 +413,6 @@ private fun CategoryBottomSheet(
         mutableStateOf(currentVote?.nomineeId)
     }
     val context = LocalContext.current
-    var trailerConfirmNominee by remember { mutableStateOf<Nominee?>(null) }
-
-    // Trailer confirmation dialog
-    trailerConfirmNominee?.let { nominee ->
-        AlertDialog(
-            onDismissRequest = { trailerConfirmNominee = null },
-            title = { Text("Play trailer?") },
-            text = { Text("Watch the ${nominee.title} trailer?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    val intent = Intent(context, TrailerPlayerActivity::class.java).apply {
-                        putExtra(TrailerPlayerActivity.EXTRA_YOUTUBE_ID, nominee.trailerYouTubeId)
-                    }
-                    context.startActivity(intent)
-                    trailerConfirmNominee = null
-                }) {
-                    Text("Play")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { trailerConfirmNominee = null }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
 
     // Voting is disabled if: locked, has winner, OR user can't vote (no open competitions)
     val isVotingDisabled = category.isVotingLocked || category.hasWinner || !canVote
@@ -439,8 +422,38 @@ private fun CategoryBottomSheet(
 
     val showSubmitButton = !category.isVotingLocked && !category.hasWinner
 
+    // Unsaved changes dialog
+    var showDiscardDialog by remember { mutableStateOf(false) }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Unsaved Changes") },
+            text = { Text("You have unsaved changes. Are you sure you want to discard them?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardDialog = false
+                    onDismiss()
+                }) {
+                    Text("Discard", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("Keep Editing")
+                }
+            }
+        )
+    }
+
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (hasChanges) {
+                showDiscardDialog = true
+            } else {
+                onDismiss()
+            }
+        },
         sheetState = sheetState
     ) {
         Column(
@@ -461,7 +474,13 @@ private fun CategoryBottomSheet(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                TextButton(onClick = onDismiss) {
+                TextButton(onClick = {
+                    if (hasChanges) {
+                        showDiscardDialog = true
+                    } else {
+                        onDismiss()
+                    }
+                }) {
                     Text("Done")
                 }
             }
@@ -638,7 +657,12 @@ private fun CategoryBottomSheet(
                                 }
                             },
                             onPlayTrailer = if (nominee.trailerYouTubeId != null) {
-                                { trailerConfirmNominee = nominee }
+                                {
+                                    val intent = Intent(context, TrailerPlayerActivity::class.java).apply {
+                                        putExtra(TrailerPlayerActivity.EXTRA_YOUTUBE_ID, nominee.trailerYouTubeId)
+                                    }
+                                    context.startActivity(intent)
+                                }
                             } else null,
                             modifier = Modifier.padding(horizontal = 16.dp)
                         )
@@ -701,116 +725,183 @@ private fun NomineeRow(
     onPlayTrailer: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = when {
-                isWinner -> Color(0xFFFFD700).copy(alpha = 0.1f)
-                isSelected -> MaterialTheme.colorScheme.primaryContainer
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            }
-        )
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val trailerButtonWidthPx = with(density) { 80.dp.toPx() }
+    val offsetX = remember { Animatable(0f) }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
     ) {
-        Row(
+        // Trailer action behind the card (revealed on swipe)
+        if (onPlayTrailer != null) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color(0xFF2196F3), RoundedCornerShape(12.dp))
+                    .clickable {
+                        onPlayTrailer()
+                        scope.launch { offsetX.animateTo(0f, tween(200)) }
+                    },
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Column(
+                    modifier = Modifier.padding(end = 20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayCircle,
+                        contentDescription = "Play trailer",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "Trailer",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+
+        // Main card content (swipeable)
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .then(
+                    if (onPlayTrailer != null) {
+                        Modifier.pointerInput(Unit) {
+                            detectHorizontalDragGestures(
+                                onDragEnd = {
+                                    scope.launch {
+                                        val target = if (offsetX.value < -trailerButtonWidthPx / 2) {
+                                            -trailerButtonWidthPx
+                                        } else {
+                                            0f
+                                        }
+                                        offsetX.animateTo(target, tween(200))
+                                    }
+                                },
+                                onHorizontalDrag = { _, dragAmount ->
+                                    scope.launch {
+                                        val newOffset = (offsetX.value + dragAmount)
+                                            .coerceIn(-trailerButtonWidthPx, 0f)
+                                        offsetX.snapTo(newOffset)
+                                    }
+                                }
+                            )
+                        }
+                    } else Modifier
+                ),
+            colors = CardDefaults.cardColors(
+                containerColor = when {
+                    isWinner -> Color(0xFFFFD700).copy(alpha = 0.1f)
+                    isSelected -> MaterialTheme.colorScheme.primaryContainer
+                    else -> MaterialTheme.colorScheme.surfaceVariant
+                }
+            )
         ) {
-            // Radio button + image — taps to vote
             Row(
-                modifier = Modifier.clickable(enabled = !isLocked, onClick = onClick),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (!isLocked) {
-                    Icon(
-                        imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
-                        contentDescription = if (isSelected) "Selected" else "Not selected",
-                        tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                if (nominee.imageUrl.isNotEmpty()) {
-                    AsyncImage(
-                        model = nominee.imageUrl,
-                        contentDescription = nominee.title,
-                        modifier = Modifier
-                            .size(50.dp, 70.dp)
-                            .clip(RoundedCornerShape(6.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-
-            // Text area — taps to play trailer (or vote if no trailer)
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(
-                        enabled = !isLocked || onPlayTrailer != null,
-                        onClick = onPlayTrailer ?: onClick
-                    )
-            ) {
-                Text(
-                    text = nominee.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
-                )
-                nominee.subtitle?.let { subtitle ->
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                if (onPlayTrailer != null) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(3.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                // Radio button + image — taps to vote
+                Row(
+                    modifier = Modifier.clickable(enabled = !isLocked, onClick = onClick),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (!isLocked) {
                         Icon(
-                            imageVector = Icons.Default.PlayCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                            contentDescription = if (isSelected) "Selected" else "Not selected",
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
                         )
-                        Text(
-                            text = "Trailer Available",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+
+                    if (nominee.imageUrl.isNotEmpty()) {
+                        AsyncImage(
+                            model = nominee.imageUrl,
+                            contentDescription = nominee.title,
+                            modifier = Modifier
+                                .size(50.dp, 70.dp)
+                                .clip(RoundedCornerShape(6.dp)),
+                            contentScale = ContentScale.Crop
                         )
                     }
                 }
-            }
 
-            // Winner badge
-            if (isWinner) {
-                Surface(
-                    color = Color(0xFFFFD700).copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(6.dp)
+                // Text area — now always selects nominee (trailer moved to swipe)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable(enabled = !isLocked, onClick = onClick)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.EmojiEvents,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = Color(0xFFFFD700)
-                        )
+                    Text(
+                        text = nominee.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    nominee.subtitle?.let { subtitle ->
                         Text(
-                            text = "Winner",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFFFFD700)
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+
+                    if (onPlayTrailer != null) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "Swipe for trailer",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                // Winner badge
+                if (isWinner) {
+                    Surface(
+                        color = Color(0xFFFFD700).copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.EmojiEvents,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = Color(0xFFFFD700)
+                            )
+                            Text(
+                                text = "Winner",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFFFD700)
+                            )
+                        }
                     }
                 }
             }

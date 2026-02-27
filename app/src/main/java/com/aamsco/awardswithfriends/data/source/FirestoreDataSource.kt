@@ -2,6 +2,7 @@ package com.aamsco.awardswithfriends.data.source
 
 import com.aamsco.awardswithfriends.data.model.*
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.tasks.await
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.snapshots
 import com.google.firebase.firestore.toObject
@@ -158,6 +159,16 @@ class FirestoreDataSource @Inject constructor(
             .whereEqualTo("odUserId", userId)
             .snapshots()
             .map { snapshot -> snapshot.toObjects<Vote>() }
+    }
+
+    suspend fun votesForUser(competitionId: String, userId: String): List<Vote> {
+        val snapshot = firestore.collection("competitions")
+            .document(competitionId)
+            .collection("votes")
+            .whereEqualTo("odUserId", userId)
+            .get()
+            .await()
+        return snapshot.toObjects<Vote>()
     }
 
     fun allVotesFlow(competitionId: String): Flow<List<Vote>> {

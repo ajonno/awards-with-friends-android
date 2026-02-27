@@ -61,6 +61,10 @@ class CompetitionRepository @Inject constructor(
         return firestoreDataSource.votesFlow(competitionId, currentUserId)
     }
 
+    suspend fun votesForUser(competitionId: String, userId: String): List<Vote> {
+        return firestoreDataSource.votesForUser(competitionId, userId)
+    }
+
     fun allVotesFlow(competitionId: String): Flow<List<Vote>> {
         return firestoreDataSource.allVotesFlow(competitionId)
     }
