@@ -28,7 +28,7 @@ class CloudFunctionsDataSource @Inject constructor(
 
     suspend fun joinCompetition(inviteCode: String): Map<String, Any> {
         val data = hashMapOf(
-            "inviteCode" to inviteCode.uppercase()
+            "code" to inviteCode.uppercase()
         )
         val result = functions
             .getHttpsCallable("joinCompetition")
