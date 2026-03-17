@@ -19,6 +19,7 @@ plugins {
 android {
     namespace = "com.aamsco.awardswithfriends"
     compileSdk = 36
+    flavorDimensions += "environment"
 
     defaultConfig {
         applicationId = "com.aamsco.awardswithfriends"
@@ -53,6 +54,18 @@ android {
             }
         }
     }
+    productFlavors {
+        create("prod") {
+            dimension = "environment"
+            buildConfigField("String", "WEB_APP_ORIGIN", "\"https://awardswithfriends-25718.web.app\"")
+        }
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            buildConfigField("String", "WEB_APP_ORIGIN", "\"https://awardswithfriends-dev-a176c.web.app\"")
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -61,6 +74,7 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 }

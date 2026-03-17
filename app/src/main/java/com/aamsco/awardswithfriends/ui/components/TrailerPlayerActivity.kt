@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.aamsco.awardswithfriends.BuildConfig
 
 class TrailerPlayerActivity : ComponentActivity() {
 
@@ -52,7 +53,7 @@ private fun TrailerPlayerScreen(
     youTubeId: String,
     onClose: () -> Unit
 ) {
-    val appOrigin = "https://awardswithfriends-25718.web.app"
+    val appOrigin = BuildConfig.WEB_APP_ORIGIN
     val html = """
         <!DOCTYPE html>
         <html>

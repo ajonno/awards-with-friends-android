@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.aamsco.awardswithfriends.BuildConfig
 import com.aamsco.awardswithfriends.data.model.Nominee
 import com.aamsco.awardswithfriends.ui.components.TrailerPlayerActivity
 import kotlinx.coroutines.launch
@@ -304,9 +305,9 @@ private fun NomineeCard(
     }
 
     val placeholderUrl = if (isPeopleCategory) {
-        "https://awardswithfriends-25718.web.app/placeholders/person.svg"
+        "${BuildConfig.WEB_APP_ORIGIN}/placeholders/person.svg"
     } else {
-        "https://awardswithfriends-25718.web.app/placeholders/movie.svg"
+        "${BuildConfig.WEB_APP_ORIGIN}/placeholders/movie.svg"
     }
 
     val imageUrl = nominee.imageUrl.ifEmpty { placeholderUrl }
