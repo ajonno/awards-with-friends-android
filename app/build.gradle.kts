@@ -57,12 +57,16 @@ android {
     productFlavors {
         create("prod") {
             dimension = "environment"
+            buildConfigField("boolean", "IS_DEV_ENV", "false")
+            buildConfigField("String", "ENVIRONMENT_LABEL", "\"PROD\"")
             buildConfigField("String", "WEB_APP_ORIGIN", "\"https://awardswithfriends-25718.web.app\"")
         }
         create("dev") {
             dimension = "environment"
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
+            buildConfigField("boolean", "IS_DEV_ENV", "true")
+            buildConfigField("String", "ENVIRONMENT_LABEL", "\"DEV\"")
             buildConfigField("String", "WEB_APP_ORIGIN", "\"https://awardswithfriends-dev-a176c.web.app\"")
         }
     }

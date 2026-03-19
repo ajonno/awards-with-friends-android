@@ -331,16 +331,20 @@ private fun ParticipantPicksSheet(
                             key = { it.id }
                         ) { category ->
                             val userVote = votes.find { it.categoryId == category.id }
-                            val isCorrect = userVote?.let { it.nomineeId == category.winnerId } ?: false
+                            val isCorrect = userVote?.let { category.isCorrectNominee(it.nomineeId) } ?: false
                             val votedNomineeName = userVote?.let { vote ->
                                 category.nominees.find { it.id == vote.nomineeId }?.title
                             }
+                            val winnerNames = category.resolvedCorrectNomineeIds
+                                .mapNotNull { nomineeId ->
+                                    category.nominees.find { it.id == nomineeId }?.title
+                                }
 
                             PickRow(
                                 categoryName = category.name,
                                 votedNomineeName = votedNomineeName,
                                 hasWinner = category.hasWinner,
-                                winnerName = category.winner?.title,
+                                winnerName = winnerNames.joinToString(", "),
                                 isCorrect = isCorrect,
                                 hasVote = userVote != null
                             )

@@ -649,7 +649,7 @@ private fun CategoryBottomSheet(
                         NomineeRow(
                             nominee = nominee,
                             isSelected = selectedNomineeId == nominee.id,
-                            isWinner = category.winnerId == nominee.id,
+                            isWinner = category.isCorrectNominee(nominee.id),
                             isLocked = isVotingDisabled,
                             onClick = {
                                 if (!isVotingDisabled) {

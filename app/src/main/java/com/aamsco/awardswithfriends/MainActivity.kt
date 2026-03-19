@@ -9,12 +9,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.aamsco.awardswithfriends.data.source.CloudFunctionsDataSource
@@ -80,24 +90,30 @@ class MainActivity : ComponentActivity() {
             val showOverlay by showNotificationOverlay.collectAsState()
 
             AwardsWithFriendsTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    // Only render nav graph once auth state is known
-                    authenticated?.let { isAuth ->
-                        AppNavGraph(isAuthenticated = isAuth)
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        // Only render nav graph once auth state is known
+                        authenticated?.let { isAuth ->
+                            AppNavGraph(isAuthenticated = isAuth)
 
-                        if (showOverlay) {
-                            NotificationPermissionOverlay(
-                                onEnable = {
-                                    launchSystemPermissionRequest()
-                                },
-                                onDismiss = {
-                                    showNotificationOverlay.value = false
-                                }
-                            )
+                            if (showOverlay) {
+                                NotificationPermissionOverlay(
+                                    onEnable = {
+                                        launchSystemPermissionRequest()
+                                    },
+                                    onDismiss = {
+                                        showNotificationOverlay.value = false
+                                    }
+                                )
+                            }
                         }
+                    }
+
+                    if (BuildConfig.IS_DEV_ENV) {
+                        DevEnvironmentBanner()
                     }
                 }
             }
@@ -141,4 +157,19 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val TAG = "MainActivity"
     }
+}
+
+@Composable
+private fun DevEnvironmentBanner() {
+    Text(
+        text = "${BuildConfig.ENVIRONMENT_LABEL} FIREBASE",
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFFFF6B00))
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        color = Color.White,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold
+    )
 }

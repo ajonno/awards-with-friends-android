@@ -224,7 +224,7 @@ fun CategoryDetailScreen(
                             nominee = nominee,
                             categoryName = category.name,
                             isSelected = uiState.selectedNomineeId == nominee.id,
-                            isWinner = category.winnerId == nominee.id,
+                            isWinner = category.isCorrectNominee(nominee.id),
                             isLocked = category.isVotingLocked,
                             onClick = { viewModel.selectNominee(nominee.id) },
                             onPlayTrailer = if (nominee.trailerYouTubeId != null) {

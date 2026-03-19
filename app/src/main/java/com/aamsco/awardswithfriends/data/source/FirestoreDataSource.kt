@@ -21,6 +21,13 @@ import javax.inject.Singleton
 class FirestoreDataSource @Inject constructor(
     private val firestore: FirebaseFirestore
 ) {
+    private fun ceremonyKey(ceremonyYear: String, event: String?): String =
+        "${event ?: "default"}:$ceremonyYear"
+
+    private fun ceremonyVotesQuery(ceremonyYear: String, event: String?) =
+        firestore.collection("ceremonyVotes")
+            .whereEqualTo("ceremonyKey", ceremonyKey(ceremonyYear, event))
+
     // ==================== Users ====================
 
     fun userFlow(uid: String): Flow<User?> {
@@ -153,102 +160,55 @@ class FirestoreDataSource @Inject constructor(
     // ==================== Votes ====================
 
     fun votesFlow(competitionId: String, userId: String): Flow<List<Vote>> {
-        return firestore.collection("competitions")
-            .document(competitionId)
-            .collection("votes")
-            .whereEqualTo("odUserId", userId)
-            .snapshots()
-            .map { snapshot -> snapshot.toObjects<Vote>() }
+        return competitionFlow(competitionId)
+            .flatMapLatest { competition ->
+                if (competition == null) {
+                    flowOf(emptyList())
+                } else {
+                    ceremonyVotesQuery(competition.ceremonyYear, competition.event)
+                        .whereEqualTo("odUserId", userId)
+                        .snapshots()
+                        .map { snapshot -> snapshot.toObjects<Vote>() }
+                }
+            }
     }
 
     suspend fun votesForUser(competitionId: String, userId: String): List<Vote> {
-        val snapshot = firestore.collection("competitions")
+        val competition = firestore.collection("competitions")
             .document(competitionId)
-            .collection("votes")
+            .get()
+            .await()
+            .toObject<Competition>() ?: return emptyList()
+
+        return ceremonyVotesQuery(competition.ceremonyYear, competition.event)
             .whereEqualTo("odUserId", userId)
             .get()
             .await()
-        return snapshot.toObjects<Vote>()
+            .toObjects()
     }
 
     fun allVotesFlow(competitionId: String): Flow<List<Vote>> {
-        return firestore.collection("competitions")
-            .document(competitionId)
-            .collection("votes")
-            .snapshots()
-            .map { snapshot -> snapshot.toObjects<Vote>() }
+        return flowOf(emptyList())
     }
 
     // Get vote for a single category (used for vote confirmation)
     fun categoryVoteFlow(userId: String, ceremonyYear: String, event: String?, categoryId: String): Flow<Vote?> {
-        return competitionsFlow(userId)
-            .flatMapLatest { competitions ->
-                // Filter competitions by ceremonyYear and event, excluding inactive
-                val matchingCompetitions = competitions.filter { comp ->
-                    comp.ceremonyYear == ceremonyYear &&
-                    comp.competitionStatus != CompetitionStatus.INACTIVE &&
-                    (event == null || comp.event == null || comp.event == event)
-                }
-
-                if (matchingCompetitions.isEmpty()) {
-                    flowOf(null)
-                } else {
-                    // Listen to the specific vote document in all matching competitions
-                    combine(
-                        matchingCompetitions.map { comp ->
-                            val voteId = "${userId}_${categoryId}"
-                            firestore.collection("competitions")
-                                .document(comp.id)
-                                .collection("votes")
-                                .document(voteId)
-                                .snapshots()
-                                .map { snapshot ->
-                                    if (snapshot.exists()) snapshot.toObject<Vote>() else null
-                                }
-                        }
-                    ) { votes ->
-                        // Return the most recent vote across competitions
-                        votes.filterNotNull().maxByOrNull { it.votedAt?.seconds ?: 0 }
-                    }
-                }
+        return ceremonyVotesQuery(ceremonyYear, event)
+            .whereEqualTo("odUserId", userId)
+            .whereEqualTo("categoryId", categoryId)
+            .snapshots()
+            .map { snapshot ->
+                snapshot.toObjects<Vote>().maxByOrNull { it.votedAt?.seconds ?: 0 }
             }
     }
 
     // Get votes for all competitions matching a ceremony year/event
     fun ceremonyVotesFlow(userId: String, ceremonyYear: String, event: String?): Flow<Map<String, Vote>> {
-        // First get all competitions the user is in
-        return competitionsFlow(userId)
-            .flatMapLatest { competitions ->
-                // Filter competitions by ceremonyYear and event, excluding inactive
-                val matchingCompetitions = competitions.filter { comp ->
-                    comp.ceremonyYear == ceremonyYear &&
-                    comp.competitionStatus != CompetitionStatus.INACTIVE &&
-                    (event == null || comp.event == null || comp.event == event)
-                }
-
-                if (matchingCompetitions.isEmpty()) {
-                    flowOf(emptyMap())
-                } else {
-                    // Listen to votes in all matching competitions
-                    combine(
-                        matchingCompetitions.map { comp ->
-                            votesFlow(comp.id, userId)
-                        }
-                    ) { votesArrays ->
-                        // Merge all votes, keeping most recent per category
-                        val mergedVotes = mutableMapOf<String, Vote>()
-                        for (votes in votesArrays) {
-                            for (vote in votes) {
-                                val existing = mergedVotes[vote.categoryId]
-                                if (existing == null ||
-                                    (vote.votedAt?.seconds ?: 0) > (existing.votedAt?.seconds ?: 0)) {
-                                    mergedVotes[vote.categoryId] = vote
-                                }
-                            }
-                        }
-                        mergedVotes.toMap()
-                    }
-                }
+        return ceremonyVotesQuery(ceremonyYear, event)
+            .whereEqualTo("odUserId", userId)
+            .snapshots()
+            .map { snapshot ->
+                snapshot.toObjects<Vote>().associateBy { it.categoryId }
             }
     }
 

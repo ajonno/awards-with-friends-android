@@ -14,6 +14,7 @@ data class Category(
     val name: String = "",
     val displayOrder: Int = 0,
     val winnerId: String? = null,
+    val correctNomineeIds: List<String>? = null,
     val winnerAnnouncedAt: Timestamp? = null,
     val votingLocked: Boolean? = null,
     val votingLockedAt: Timestamp? = null,
@@ -32,9 +33,21 @@ data class Category(
 
     @get:Exclude
     val hasWinner: Boolean
-        get() = winnerId != null
+        get() = resolvedCorrectNomineeIds.isNotEmpty()
 
     @get:Exclude
     val winner: Nominee?
         get() = nominees.find { it.id == winnerId }
+
+    @get:Exclude
+    val resolvedCorrectNomineeIds: List<String>
+        get() {
+            val nomineeIds = correctNomineeIds?.toMutableList() ?: mutableListOf()
+            if (winnerId != null && !nomineeIds.contains(winnerId)) {
+                nomineeIds.add(0, winnerId)
+            }
+            return nomineeIds
+        }
+
+    fun isCorrectNominee(nomineeId: String): Boolean = resolvedCorrectNomineeIds.contains(nomineeId)
 }

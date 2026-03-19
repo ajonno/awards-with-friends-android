@@ -26,7 +26,13 @@ class JoinCompetitionViewModel @Inject constructor(
     fun updateCode(code: String) {
         // Limit to 6 characters, uppercase only
         val sanitized = code.uppercase().filter { it.isLetterOrDigit() }.take(6)
-        _uiState.update { it.copy(code = sanitized) }
+        _uiState.update {
+            it.copy(
+                code = sanitized,
+                error = null,
+                joinedCompetitionName = null
+            )
+        }
     }
 
     fun joinCompetition() {
@@ -38,7 +44,13 @@ class JoinCompetitionViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    error = null,
+                    joinedCompetitionName = null
+                )
+            }
 
             try {
                 val result = competitionRepository.joinCompetition(code)
@@ -62,6 +74,10 @@ class JoinCompetitionViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    fun resetState() {
+        _uiState.value = JoinCompetitionUiState()
     }
 
     fun isCodeValid(): Boolean {
